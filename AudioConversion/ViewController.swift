@@ -30,10 +30,8 @@ class ViewController: UIViewController {
 extension ViewController: AudioConversionSessionDelegate {
     func didFinishWriting(to url: URL) {
         DispatchQueue.main.async {
-            let videoPlayer = AVPlayer(url: url)
-            let avPlayerViewController = AVPlayerViewController()
-            avPlayerViewController.player = videoPlayer
-            self.present(avPlayerViewController, animated: true, completion: nil)
+            let activityViewController = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+            self.present(activityViewController, animated: true, completion: nil)
         }
     }
 }

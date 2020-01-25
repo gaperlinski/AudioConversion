@@ -86,16 +86,16 @@ class AudioConversionSession: NSObject {
     
     private func createConverter() -> LBAudioConverter {
         let asbd = AudioStreamBasicDescription(
-        mSampleRate: 44_100,
-        mFormatID: kAudioFormatMPEG4AAC,
-        mFormatFlags: UInt32(MPEG4ObjectID.AAC_LC.rawValue),
-        mBytesPerPacket: 0,
-        mFramesPerPacket: 1024,
-        mBytesPerFrame: 0,
-        mChannelsPerFrame: 2,
-        mBitsPerChannel: 0,
-        mReserved: 0)
-        
+            mSampleRate: 44_100,
+            mFormatID: kAudioFormatMPEG4AAC,
+            mFormatFlags: UInt32(MPEG4ObjectID.AAC_LC.rawValue),
+            mBytesPerPacket: 0,
+            mFramesPerPacket: 1024,
+            mBytesPerFrame: 0,
+            mChannelsPerFrame: 2,
+            mBitsPerChannel: 0,
+            mReserved: 0)
+
         return LBAudioConverter(convertingTo: asbd)
     }
     
@@ -150,7 +150,8 @@ extension AudioConversionSession {
             
             if input.isReadyForMoreMediaData {
                 self.primeSampleBufferIfNeeded(sampleBuffer, primingDuration: primingDuration)
-                input.append(sampleBuffer)
+                let result = input.append(sampleBuffer)
+                print(result)
             }
         }
     }
