@@ -14,6 +14,9 @@
 		26317B5823D4914100F6BB3B /* AudioConversionSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26317B5023D4914100F6BB3B /* AudioConversionSession.swift */; };
 		26317B5923D4914100F6BB3B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26317B5223D4914100F6BB3B /* AppDelegate.swift */; };
 		26317B5C23D4923800F6BB3B /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26317B5B23D4923700F6BB3B /* ViewController.swift */; };
+		26BC552223E0E8BE00699CD6 /* AudioConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26BC552123E0E8BE00699CD6 /* AudioConverter.swift */; };
+		26BC552423E0E90200699CD6 /* Atomic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26BC552323E0E90100699CD6 /* Atomic.swift */; };
+		26BC552823E0E99400699CD6 /* Running.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26BC552723E0E99400699CD6 /* Running.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +31,9 @@
 		26317B5223D4914100F6BB3B /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		26317B5323D4914100F6BB3B /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		26317B5B23D4923700F6BB3B /* ViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		26BC552123E0E8BE00699CD6 /* AudioConverter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AudioConverter.swift; sourceTree = "<group>"; };
+		26BC552323E0E90100699CD6 /* Atomic.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Atomic.swift; sourceTree = "<group>"; };
+		26BC552723E0E99400699CD6 /* Running.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Running.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -84,6 +90,9 @@
 		26317B4D23D4914100F6BB3B /* Codec */ = {
 			isa = PBXGroup;
 			children = (
+				26BC552723E0E99400699CD6 /* Running.swift */,
+				26BC552323E0E90100699CD6 /* Atomic.swift */,
+				26BC552123E0E8BE00699CD6 /* AudioConverter.swift */,
 				26317B4E23D4914100F6BB3B /* LBAudioConverter.h */,
 				26317B4F23D4914100F6BB3B /* LBAudioConverter.m */,
 			);
@@ -163,7 +172,10 @@
 			files = (
 				26317B5923D4914100F6BB3B /* AppDelegate.swift in Sources */,
 				26317B5723D4914100F6BB3B /* LBAudioConverter.m in Sources */,
+				26BC552823E0E99400699CD6 /* Running.swift in Sources */,
+				26BC552223E0E8BE00699CD6 /* AudioConverter.swift in Sources */,
 				26317B5C23D4923800F6BB3B /* ViewController.swift in Sources */,
+				26BC552423E0E90200699CD6 /* Atomic.swift in Sources */,
 				26317B5823D4914100F6BB3B /* AudioConversionSession.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
