@@ -16,12 +16,14 @@ class AudioConversionSession: NSObject {
     
     weak var delegate: AudioConversionSessionDelegate?
     
+    private var firstAudioBuffer = true
     private var session: AVCaptureSession!
     private var writer: AVAssetWriter!
-//    private var converter: LBAudioConverter!
-    private var converter: AudioConverter!
-    private var receivedAudioBuffers = 0
+    private var converter: LBAudioConverter!
+    private var appendedBytes = 0
     private let writingQueue = DispatchQueue(label: "com.gaperlinski.writer.lock")
+    private let sampleRate: Int32 = 44_100
+    private var receivedSamples = 0
     
     func start() {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
@@ -68,38 +70,42 @@ class AudioConversionSession: NSObject {
             
         }
         
+        firstAudioBuffer = true
+        appendedBytes = 0
+        receivedSamples = 0
+        
         writer = createWriter()
         session.startRunning()
-        converter.startRunning()
     }
 
     func finish() {
-        session.stopRunning()
-        let outputURL = writer.outputURL
-        writer.finishWriting { [weak self] in
-            self?.receivedAudioBuffers = 0
-            self?.writer = nil
-            self?.converter.stopRunning()
-//            self?.converter.stopEncoding {
-//                self?.converter = nil
-//            }
-            self?.delegate?.didFinishWriting(to: outputURL)
+        writingQueue.async {
+            self.session.stopRunning()
+            let outputURL = self.writer.outputURL
+            self.writer.finishWriting {
+                self.writer = nil
+                self.converter.stopEncoding {
+                    self.converter = nil
+                }
+                print("Appended bytes:", self.appendedBytes)
+                self.delegate?.didFinishWriting(to: outputURL)
+            }
         }
     }
     
-    private func createConverter() -> AudioConverter {
-//        let asbd = AudioStreamBasicDescription(
-//            mSampleRate: 44_100,
-//            mFormatID: kAudioFormatMPEG4AAC,
-//            mFormatFlags: UInt32(MPEG4ObjectID.AAC_LC.rawValue),
-//            mBytesPerPacket: 0,
-//            mFramesPerPacket: 1024,
-//            mBytesPerFrame: 0,
-//            mChannelsPerFrame: 2,
-//            mBitsPerChannel: 0,
-//            mReserved: 0)
+    private func createConverter() -> LBAudioConverter {
+        let asbd = AudioStreamBasicDescription(
+            mSampleRate: 44_100,
+            mFormatID: kAudioFormatMPEG4AAC,
+            mFormatFlags: UInt32(MPEG4ObjectID.AAC_LC.rawValue),
+            mBytesPerPacket: 0,
+            mFramesPerPacket: 1024,
+            mBytesPerFrame: 0,
+            mChannelsPerFrame: 2,
+            mBitsPerChannel: 0,
+            mReserved: 0)
 
-        return AudioConverter()
+        return LBAudioConverter(convertingTo: asbd)
     }
     
     private func createWriter() -> AVAssetWriter? {
@@ -125,29 +131,22 @@ class AudioConversionSession: NSObject {
 
 extension AudioConversionSession: AVCaptureAudioDataOutputSampleBufferDelegate {
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-//        converter.append(sampleBuffer)
-        converter.encodeSampleBuffer(sampleBuffer)
+        converter.append(sampleBuffer)
     }
 }
 
-//extension AudioConversionSession: LBAudioConverterDelegate {
-//    func converter(_ converter: LBAudioConverter!, convertedSampleBuffer: CMSampleBuffer!, trimDurationAtStart trimDuration: Int32) {
-//        let primingDuration = CMTime(value: CMTimeValue(trimDuration), timescale: 44_100)
-//        appendSampleBuffer(convertedSampleBuffer,  primingDuration: primingDuration)
-//    }
-//}
-
-extension AudioConversionSession: AudioConverterDelegate {
-    func didSetFormatDescription(audio formatDescription: CMFormatDescription?) {
-        // nop
-    }
-    func sampleOutput(_ sampleBuffer: CMSampleBuffer) {
-        appendSampleBuffer(sampleBuffer)
+extension AudioConversionSession: LBAudioConverterDelegate {
+    func converter(_ converter: LBAudioConverter!, convertedSampleBuffer: CMSampleBuffer!, trimDurationAtStart trimDuration: Int32) {
+        if receivedSamples < 50 { // arbitrary count to wait for getting larger sample buffers
+            receivedSamples += 1
+            return
+        }
+        appendSampleBuffer(convertedSampleBuffer, trimDuration: trimDuration)
     }
 }
 
 extension AudioConversionSession {
-    private func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
+    private func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, trimDuration: Int32) {
         writingQueue.async {
             
             guard let writer = self.writer,
@@ -162,29 +161,31 @@ extension AudioConversionSession {
             }
             
             if input.isReadyForMoreMediaData {
-                self.primeSampleBufferIfNeeded(sampleBuffer)
-                let result = input.append(sampleBuffer)
-                print(result)
+                if self.firstAudioBuffer {
+                    self.firstAudioBuffer = false
+                    let primingDuration = CMTime(value: CMTimeValue(trimDuration), timescale: self.sampleRate)
+                    self.primeSample(sampleBuffer, primingDuration: primingDuration)
+                    
+                }
+                if input.append(sampleBuffer) {
+                    self.appendedBytes += sampleBuffer.bytesCount
+                    // Uncomment to print appended bytes
+//                    for bytes in sampleBuffer.data {
+//                        print(bytes, terminator: " ")
+//                    }
+                }
             }
         }
     }
     
-    private func primeSampleBufferIfNeeded(_ sampleBuffer: CMSampleBuffer) {
-        // TODO
-        if self.receivedAudioBuffers < 2 {
-            let primingDuration = CMTimeMake(value: 1024, timescale: 44_100)
+    private func primeSample(_ sampleBuffer: CMSampleBuffer, primingDuration: CMTime) {
+        var attachmentMode: CMAttachmentMode = 0
+        let trimDuration = CMGetAttachment(sampleBuffer, key: kCMSampleBufferAttachmentKey_TrimDurationAtStart, attachmentModeOut: &attachmentMode)
+        if (trimDuration == nil) {
             CMSetAttachment(sampleBuffer,
                             key: kCMSampleBufferAttachmentKey_TrimDurationAtStart,
                             value: CMTimeCopyAsDictionary(primingDuration, allocator: kCFAllocatorDefault),
-                            attachmentMode: kCMAttachmentMode_ShouldNotPropagate)
-            self.receivedAudioBuffers += 1
-        } else if self.receivedAudioBuffers == 2 {
-            let primingDuration = CMTimeMake(value: 64, timescale: 44_100)
-            CMSetAttachment(sampleBuffer,
-                            key: kCMSampleBufferAttachmentKey_TrimDurationAtStart,
-                            value: CMTimeCopyAsDictionary(primingDuration, allocator: kCFAllocatorDefault),
-                            attachmentMode: kCMAttachmentMode_ShouldNotPropagate)
-            self.receivedAudioBuffers += 1
+                            attachmentMode: kCMAttachmentMode_ShouldPropagate)
         }
     }
 }

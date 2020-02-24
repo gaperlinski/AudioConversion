@@ -29,9 +29,34 @@ class ViewController: UIViewController {
 
 extension ViewController: AudioConversionSessionDelegate {
     func didFinishWriting(to url: URL) {
-        DispatchQueue.main.async {
-            let activityViewController = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-            self.present(activityViewController, animated: true, completion: nil)
+        let asset = AVAsset(url: url)
+        guard let assetReader = try? AVAssetReader(asset: asset) else {
+            return
+        }
+        
+        asset.loadValuesAsynchronously(forKeys: ["tracks"]) {
+            var readBytes = 0
+            
+            guard let audioTrack = asset.tracks(withMediaType: .audio).first else { return }
+            let audioOutput = AVAssetReaderTrackOutput(track: audioTrack, outputSettings: nil)
+            assetReader.add(audioOutput)
+            assetReader.startReading()
+            
+            while assetReader.status == .reading {
+                if let sampleBuffer = audioOutput.copyNextSampleBuffer() {
+                    if sampleBuffer.bytesCount > 0 {
+//                      Uncomment to print bytes at beginning of file
+//                        if readBytes == 0 {
+//                            for bytes in sampleBuffer.data {
+//                                print(bytes, terminator: " ")
+//                            }
+//                        }
+                        readBytes += sampleBuffer.bytesCount
+                    }
+                }
+            }
+            
+            print("Read bytes:", readBytes)
         }
     }
 }
